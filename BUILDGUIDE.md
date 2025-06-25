@@ -81,7 +81,7 @@ Each phase builds on the previous; **do not** jump ahead.
 
 ## 4  Per‑File Responsibilities
 
-### 4.1  `parser`
+### 4.1  `parser`
 
 * **`markdown_parser.MardownParser`**  — wraps *markdown‑it‑py*.  Rarely
   changes after you enable required extensions (`table`, `strikethrough`).
@@ -90,7 +90,7 @@ Each phase builds on the previous; **do not** jump ahead.
   correct `annotations` & optional `equation` field.  Start with bold/italic ‑→
   add code, then LaTeX, then links.
 
-### 4.2  `blocks`
+### 4.2  `blocks`
 
 Every module defines **one `BlockConverter` subclass**.
 
@@ -107,20 +107,20 @@ class ParagraphConverter(BlockConverter):
 * If you consume additional tokens, PageBuilder can later be taught to advance
   `idx` by more than 1 via `context` — keep it simple initially.
 
-### 4.3  `builder.page_builder.PageBuilder`
+### 4.3  `builder.page_builder.PageBuilder`
 
 *Walks* the token stream, dispatches to converters.  After lists/columns work
 it might need smarter depth bookkeeping, but for now a simple `while` loop is
 fine.
 
-### 4.4  `notion`
+### 4.4  `notion`
 
 * `client.py` — wrap `notion_client.Client` so the rest of the code never
   imports the SDK directly (easy to mock in tests).
 * `upload.py` — optional convenience for *future* live syncs; ignore until core
   conversion passes all local tests.
 
-### 4.5  `cli.py`
+### 4.5  `cli.py`
 
 * Parses `--dry` vs real upload.
 * Reads token from `config.settings` (later from `NOTION_TOKEN`).
