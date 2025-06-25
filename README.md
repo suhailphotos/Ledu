@@ -197,3 +197,96 @@ Output:
 This package should serve as a **high-fidelity Markdown-to-Notion converter** with fine-grained control over rich text and block types, designed for programmatic page building via the Notion API. All text formatting, equations, code, lists, tables, and advanced block types (AI, Mermaid, columns, etc.) are supported.
 
 ---
+
+# Ledu — Development Guide
+
+> **Purpose:** This document walks you (the implementer) through the recommended build order, core responsibilities, and testing rhythm for each module in the Ledu Markdown → Notion toolkit.
+
+---
+
+## 1  High‑Level Architecture
+
+```text
+Markdown (raw string)
+    │  (1)
+    ▼
+MarkdownParser  ──►  Token list (markdown‑it‑py)
+    │  (2)
+    ▼
+PageBuilder  ──►  BlockConverter registry  ──►  Notion‑style JSON blocks
+    │  (3)                             ▲
+    │                                   │
+    └──► NotionClient (optional upload) ─┘
+```
+
+1. **MarkdownParser**   — Converts raw Markdown into a stable token stream.
+2. **PageBuilder**      — Walks the token stream, dispatching each token to the correct **BlockConverter** subclass (paragraph, heading, list, …).
+3. **BlockConverters**  — Transform tokens into **Notion‑ready block dictionaries**; rely on **RichTextSegmenter** for inline splitting.
+
+All singletons (settings, registry) live in **`config.py`** so the rest of the code stays stateless.
+
+---
+
+## 2  Implementation Milestones
+
+| Phase | Goal                                              | Key modules                                  | Tests to add                        |
+| ----- | ------------------------------------------------- | -------------------------------------------- | ----------------------------------- |
+| **0** | Skeleton compiles                                 | all `__init__.py`, utils.typing              | just `pytest -q` smoke test         |
+| **1** | Paragraph & Heading blocks                        | `rich_text.py`, `paragraph.py`, `heading.py` | inline mix fixture, heading fixture |
+| **2** | Lists (bulleted/numbered) & nested depth handling | `list_item.py`, expand **ConversionContext** | deep‑nest fixture                   |
+| **3** | Code & Quote/Callout blocks                       | `code.py`, `advanced.py` (partial)           | code block language, caption        |
+| **4** | Tables & Divider                                  | `table.py`                                   | simple table fixture                |
+| **5** | Media (image/audio/video/file/bookmark)           | `media.py`                                   | remote vs. data‑url fixture         |
+| **6** | Toggles, Columns, Synced, TOC                     | `advanced.py` (full)                         | toggle inside list fixture          |
+| **7** | CLI upload path                                   | `cli.py`, `notion/client.py`                 | record HTTP calls with `pytest‑vcr` |
+| **8** | Extension hooks + config overrides                | entry‑point loading, `config.py`             | plugin test package                 |
+
+*Complete each phase before moving forward—small PRs keep the mental load low.*
+
+---
+
+## 3  Coding Rhythm
+
+1. **Write a failing fixture** in `tests/fixtures/` (e.g. `paragraph.md` + expected JSON).
+2. Implement the minimal logic to pass that fixture.
+3. Run `pytest -q`; commit.
+4. Refactor if needed (🐥 → 🐓).
+
+> **Why fixtures?** They double as living documentation; future Notion API changes will surface as diff failures.
+
+---
+
+## 4  Rich‑Text Gotchas
+
+* Inline equations: treat `$...$` **before** other annotations to avoid `$\pi$` appearing inside `**bold**` regex hits.
+* Overlapping styles: split into smallest non‑overlapping segments **left → right**.
+* Mentions & links: decide on a custom Markdown extension (e.g. `@user` or `<mention:page‑id>`).
+
+---
+
+## 5  Testing Strategy
+
+* **Unit** – each converter’s `to_notion` on controlled token lists.
+* **Integration** – end‑to‑end `PageBuilder.convert` against full‑page fixtures.
+* **Live smoke** – optional: flag‐guarded test that pushes to a dummy Notion page when `NOTION_TOKEN` env var is set.
+
+---
+
+## 6  Release & Distribution
+
+* Bump version in `pyproject.toml` → `poetry build` → `poetry publish`.
+* Git tag using `vX.Y.Z` (semver).
+* Draft a GitHub release that links the **CHANGELOG.md** (generate via `towncrier` once repo stabilises).
+
+---
+
+## 7  Future Ideas
+
+* **Round‑trip support** (Notion → Markdown) using reversible AST annotations.
+* **Mermaid preview**: detect \`\`\`mermaid blocks and upload rendered SVG via Notion image block.
+* **Watch mode**: CLI subcommand that watches a Markdown file for changes and syncs automatically.
+
+---
+
+*Happy building!*
+
