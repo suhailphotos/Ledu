@@ -16,6 +16,9 @@ rich = "^13.7"             # CLI prettiness
 [tool.poetry.group.test.dependencies]
 pytest = "^8.0"
 
+[tool.poetry.scripts]
+ledu = "ledu.cli:main"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
