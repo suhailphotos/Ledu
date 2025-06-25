@@ -8,7 +8,13 @@ packages = [{include = "ledu", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+markdown-it-py = "^3.0"
+notion-client = "^2.2"
+pydantic = "^2.7"          # optional but handy
+rich = "^13.7"             # CLI prettiness
 
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0"
 
 [build-system]
 requires = ["poetry-core"]
